@@ -1,0 +1,5 @@
+CREATE DATABASE WalmartBI;
+GO
+
+USE WalmartBI;
+GO
