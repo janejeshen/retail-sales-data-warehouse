@@ -21,7 +21,7 @@ FROM staging.stg_calendar
 UNION ALL
 
 SELECT
-    'stg_sell_prices',
+    'stg_sell_prices' AS TableName,
     COUNT(*)
 FROM staging.stg_sell_prices;
 

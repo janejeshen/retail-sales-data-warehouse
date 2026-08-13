@@ -59,3 +59,37 @@ WHERE rn > 1;
 
 PRINT 'Duplicate calendar records removed.';
 GO
+
+
+/*
+CORRECTING stg_sell_prices
+
+A price record is uniquely identified by:
+    - store_id
+    - item_id
+    - wm_yr_wk
+    - sell_price
+Should keep one copy of each unique record.
+*/
+
+WITH DuplicatePrices AS
+(
+    SELECT
+        *,
+        ROW_NUMBER() OVER
+        (
+            PARTITION BY
+                store_id,
+                item_id,
+                wm_yr_wk,
+                sell_price
+            ORDER BY
+                (SELECT NULL)
+        ) AS rn
+    FROM staging.stg_sell_prices
+)
+DELETE FROM DuplicatePrices
+WHERE rn > 1;
+
+PRINT 'Duplicate sell price records removed.';
+GO
