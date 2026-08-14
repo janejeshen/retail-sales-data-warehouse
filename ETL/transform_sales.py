@@ -1,20 +1,24 @@
 """
-Reads the raw sales file in chunks, unpivots it,
-performs basic cleaning and yields transformed chunks.
+Sales transformation module.
+Responsibilities:
+    1. Read sales data in chunks.
+    2. Unpivot the wide sales format.
+    3. Clean text columns.
+    4. Convert units sold to integers.
+    5. Remove zero-sales records.
+    6. Remove duplicate records within each chunk.
+
+This does NOT load data into SQL Server.
 """
 
 import pandas as pd
-
 from config import SALES_CSV, CHUNK_SIZE
 
 
-def sales_generator():
-    """
-    Yield transformed chunks of sales data.
+def transform_sales():
 
-    Each yielded DataFrame has columns:
-        id, item_id, dept_id, cat_id,
-        store_id, state_id, d, units_sold
+    """
+    Generates transformed sales DataFrames one chunk at a time.
     """
 
     reader = pd.read_csv(
@@ -23,6 +27,8 @@ def sales_generator():
     )
 
     for chunk in reader:
+
+        # UNPIVOT WIDE DATA INTO LONG FORMAT
 
         melted = chunk.melt(
             id_vars=[
@@ -37,24 +43,38 @@ def sales_generator():
             value_name="units_sold"
         )
 
-        # Basic cleaning
-        for col in [
+        # CLEAN TEXT COLUMNS
+
+        for column in [
             "item_id",
             "dept_id",
             "cat_id",
             "store_id",
             "state_id"
         ]:
-            melted[col] = melted[col].str.upper().str.strip()
+
+            melted[column] = (
+                melted[column]
+                .str.upper()
+                .str.strip()
+            )
+
+        # CLEAN SALES VALUES
 
         melted["units_sold"] = (
             melted["units_sold"]
             .fillna(0)
-            .astype(int)
+            .astype("int32")
         )
 
-        melted = melted[melted["units_sold"] > 0]
 
+        # REMOVE ZERO SALES
+
+        melted = melted[
+            melted["units_sold"] > 0
+        ]
+
+        # REMOVE DUPLICATES
         melted = melted.drop_duplicates()
-
+        
         yield melted

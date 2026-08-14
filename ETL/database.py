@@ -1,12 +1,13 @@
 """
-Creating a reusable SQL Server engine.
-Every file simply imports:
-from database import engine
+SQL Server database connection.
+All ETL modules import the SQLAlchemy engine from this file.
 """
 
 import urllib
 from sqlalchemy import create_engine
 from config import SERVER, DATABASE
+
+# SQL SERVER CONNECTION
 
 connection_string = (
     "DRIVER={ODBC Driver 17 for SQL Server};"
@@ -16,6 +17,9 @@ connection_string = (
 )
 
 engine = create_engine(
-    f"mssql+pyodbc:///?odbc_connect={urllib.parse.quote_plus(connection_string)}",
+    (
+        "mssql+pyodbc:///?odbc_connect="
+        f"{urllib.parse.quote_plus(connection_string)}"
+    ),
     fast_executemany=True
 )
