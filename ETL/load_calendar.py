@@ -26,19 +26,15 @@ def load_calendar(
         CALENDAR_DATASET,
         batch_id ):
 
-        print(
-            f"Calendar batch '{batch_id}' already loaded. "
-            "Skipping."
-        )
+        print(f"Calendar batch '{batch_id}' already loaded. "
+            "Skipping.")
 
         return
 
 
     if not os.path.exists(source_file):
 
-        raise FileNotFoundError(
-            f"Calendar file not found: {source_file}"
-        )
+        raise FileNotFoundError("Calendar file not found: {source_file}")
 
 
     start_batch(
@@ -76,11 +72,7 @@ def load_calendar(
 
     except Exception as error:
 
-        fail_batch(
-            dataset_name=CALENDAR_DATASET,
-            batch_id=batch_id,
-            error_message=str(error)
-        )
+        fail_batch(dataset_name=CALENDAR_DATASET,batch_id=batch_id,error_message=str(error))
 
         raise
 

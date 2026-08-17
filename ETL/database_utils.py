@@ -1,6 +1,4 @@
 """
-Reusable database functions for the Walmart BI ETL pipeline.
-
 This module handles:
 
 1. Checking whether a batch has already succeeded.
@@ -11,16 +9,11 @@ This module handles:
 """
 
 from datetime import datetime
-
 from sqlalchemy import text
-
 from database import engine
 
 
-# ================================================================
 # CHECK WHETHER A BATCH WAS SUCCESSFULLY LOADED
-# ================================================================
-
 def batch_already_loaded(
     dataset_name: str,
     batch_id: str
@@ -38,7 +31,6 @@ def batch_already_loaded(
         """
         SELECT COUNT(*)
         FROM staging.etl_load_history
-
         WHERE dataset_name = :dataset_name
           AND batch_id = :batch_id
           AND status = 'SUCCESS'
@@ -58,9 +50,7 @@ def batch_already_loaded(
     return count > 0
 
 
-# ================================================================
 # CHECK WHETHER A BATCH EXISTS
-# ================================================================
 
 def batch_exists(
     dataset_name: str,
@@ -80,7 +70,6 @@ def batch_exists(
         """
         SELECT COUNT(*)
         FROM staging.etl_load_history
-
         WHERE dataset_name = :dataset_name
           AND batch_id = :batch_id
         """
@@ -98,11 +87,7 @@ def batch_exists(
 
     return count > 0
 
-
-# ================================================================
 # START OR RESTART A BATCH
-# ================================================================
-
 def start_batch(
     dataset_name: str,
     source_file: str,
@@ -125,17 +110,12 @@ def start_batch(
     is therefore respected.
     """
 
-    # ------------------------------------------------------------
     # Check existing batch
-    # ------------------------------------------------------------
 
     query = text(
         """
-        SELECT
-            status
-
+        SELECT status
         FROM staging.etl_load_history
-
         WHERE dataset_name = :dataset_name
           AND batch_id = :batch_id
         """
@@ -152,9 +132,7 @@ def start_batch(
         ).fetchone()
 
 
-    # ============================================================
     # CASE 1 — BATCH DOES NOT EXIST
-    # ============================================================
 
     if result is None:
 
@@ -201,29 +179,20 @@ def start_batch(
         return
 
 
-    # ============================================================
     # EXISTING STATUS
-    # ============================================================
 
     existing_status = result.status
 
 
-    # ============================================================
     # CASE 2 — ALREADY SUCCESSFUL
-    # ============================================================
 
     if existing_status == "SUCCESS":
 
-        print(
-            f"Batch '{batch_id}' already completed successfully."
-        )
+        print(f"Batch '{batch_id}' already completed successfully.")
 
         return
 
-
-    # ============================================================
     # CASE 3 — FAILED OR INTERRUPTED
-    # ============================================================
 
     update_query = text(
         """
@@ -236,7 +205,6 @@ def start_batch(
             load_completed = NULL,
             status = 'RUNNING',
             error_message = NULL
-
         WHERE dataset_name = :dataset_name
           AND batch_id = :batch_id
         """
@@ -254,14 +222,10 @@ def start_batch(
             }
         )
 
-    print(
-        f"Restarting existing batch '{batch_id}'."
-    )
+    print(f"Restarting existing batch '{batch_id}'.")
 
 
-# ================================================================
 # COMPLETE BATCH
-# ================================================================
 
 def complete_batch(
     dataset_name: str,
@@ -281,7 +245,7 @@ def complete_batch(
             load_completed = :load_completed,
             status = 'SUCCESS',
             error_message = NULL
-
+            
         WHERE dataset_name = :dataset_name
           AND batch_id = :batch_id
         """
@@ -300,9 +264,7 @@ def complete_batch(
         )
 
 
-# ================================================================
 # FAIL BATCH
-# ================================================================
 
 def fail_batch(
     dataset_name: str,

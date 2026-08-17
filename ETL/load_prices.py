@@ -10,12 +10,7 @@ Features:
 import os
 import time
 import pandas as pd
-from config import (
-    PRICES_CSV,
-    PRICES_DATASET,
-    SQL_BATCH_SIZE
-)
-
+from config import (PRICES_CSV,PRICES_DATASET,SQL_BATCH_SIZE)
 from database import engine
 from database_utils import (
     batch_already_loaded,
@@ -25,8 +20,7 @@ from database_utils import (
 )
 
 
-# LOAD PRICES
-
+# LOADING PRICES
 def load_prices(
     source_file: str = PRICES_CSV,
     batch_id: str = "M5_PRICES_001"
@@ -40,7 +34,7 @@ def load_prices(
     print(f"Batch  : {batch_id}")
 
 
-    # CHECK WHETHER THE BATCH ALREADY EXISTS
+    # CHECKING WHETHER THE BATCH ALREADY EXISTS
 
     if batch_already_loaded(
         PRICES_DATASET,
@@ -49,8 +43,7 @@ def load_prices(
 
         print(
             f"\nPrice batch '{batch_id}' "
-            "has already been loaded."
-        )
+            "has already been loaded.")
 
         print("Skipping price load.")
 
@@ -58,18 +51,13 @@ def load_prices(
 
     # CHECK FILE
     if not os.path.exists(source_file):
-
-        raise FileNotFoundError(
-            f"Price file not found:\n{source_file}"
-        )
+        raise FileNotFoundError(f"Price file not found:\n{source_file}")
 
     # REGISTER BATCH
     start_batch(
         dataset_name=PRICES_DATASET,
         source_file=source_file,
-        batch_id=batch_id
-    )
-
+        batch_id=batch_id)
 
     start_time = time.time()
 
@@ -77,12 +65,10 @@ def load_prices(
 
 
     try:
-        # READ CSV IN CHUNKS
+        # READING CSV IN CHUNKS
         reader = pd.read_csv(
             source_file,
-            chunksize=100_000
-        )
-
+            chunksize=100_000)
 
         for chunk_number, chunk in enumerate(
             reader,
@@ -113,7 +99,7 @@ def load_prices(
                     )
 
 
-            # CLEAN NUMERIC COLUMNS
+            # CLEANING NUMERIC COLUMNS
 
             if "wm_yr_wk" in chunk.columns:
 
@@ -130,32 +116,23 @@ def load_prices(
                     errors="coerce"
                 )
 
-            # REMOVE INVALID RECORDS
+            # REMOVING INVALID RECORDS
             chunk = chunk.dropna(
                 subset=[
                     "store_id",
                     "item_id",
-                    "wm_yr_wk"
-                ]
-            )
+                    "wm_yr_wk"])
 
-            # REMOVE DUPLICATES WITHIN CHUNK
+            # REMOVING DUPLICATES WITHIN CHUNK
             chunk = chunk.drop_duplicates()
 
-
             if len(chunk) == 0:
-
-                print(
-                    "No valid rows in this chunk."
-                )
-
+                print("No valid rows in this chunk.")
                 continue
 
-
-            # INSERT USING A FRESH CONNECTION
+            # INSERTING USING A FRESH CONNECTION
 
             with engine.begin() as connection:
-
                 chunk.to_sql(
                     name="stg_sell_prices",
                     schema="staging",
@@ -165,39 +142,28 @@ def load_prices(
                     chunksize=SQL_BATCH_SIZE
                 )
 
-
             rows_inserted = len(chunk)
 
             total_inserted += rows_inserted
 
+            print(f"Inserted {rows_inserted:,} rows")
 
-            print(
-                f"Inserted {rows_inserted:,} rows"
-            )
-
-        # MARK SUCCESS
+        # MARKING SUCCESS
         complete_batch(
             dataset_name=PRICES_DATASET,
             batch_id=batch_id,
-            rows_loaded=total_inserted
-        )
-
+            rows_loaded=total_inserted)
 
         elapsed = time.time() - start_time
-
 
         print("\n" + "=" * 60)
         print("PRICE IMPORT COMPLETED")
         print("=" * 60)
 
-        print(
-            f"Rows Inserted : {total_inserted:,}"
-        )
+        print(f"Rows Inserted : {total_inserted:,}")
 
-        print(
-            f"Time Taken    : "
-            f"{elapsed / 60:.2f} minutes"
-        )
+        print(f"Time Taken    : "
+            f"{elapsed / 60:.2f} minutes")
 
 
     except Exception as error:
@@ -215,14 +181,10 @@ def load_prices(
         print("PRICE IMPORT FAILED")
         print("=" * 60)
 
-        print(
-            f"Error: {error}"
-        )
-
+        print(f"Error: {error}")
 
         raise
 
 # RUN DIRECTLY
 if __name__ == "__main__":
-
     load_prices()

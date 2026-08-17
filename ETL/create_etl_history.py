@@ -8,7 +8,6 @@ from database import engine
 CREATE_ETL_HISTORY_TABLE = """
 
 IF OBJECT_ID('staging.etl_load_history', 'U') IS NULL
-
 BEGIN
 
     CREATE TABLE staging.etl_load_history
@@ -33,16 +32,9 @@ END;
 """
 
 def create_etl_history_table():
-
     with engine.begin() as connection:
-
-        connection.exec_driver_sql(
-            CREATE_ETL_HISTORY_TABLE
-        )
-
-    print(
-        "ETL load history table checked successfully."
-    )
+        connection.exec_driver_sql(CREATE_ETL_HISTORY_TABLE)
+    print("ETL load history table checked successfully.")
 
 
 if __name__ == "__main__":

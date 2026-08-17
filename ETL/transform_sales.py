@@ -16,20 +16,15 @@ from config import SALES_CSV, CHUNK_SIZE
 
 
 def transform_sales():
-
     """
     Generates transformed sales DataFrames one chunk at a time.
     """
 
-    reader = pd.read_csv(
-        SALES_CSV,
-        chunksize=CHUNK_SIZE
-    )
+    reader = pd.read_csv( SALES_CSV,chunksize=CHUNK_SIZE)
 
     for chunk in reader:
 
-        # UNPIVOT WIDE DATA INTO LONG FORMAT
-
+        # UNPIVOTING WIDE DATA INTO LONG FORMAT
         melted = chunk.melt(
             id_vars=[
                 "id",
@@ -37,14 +32,11 @@ def transform_sales():
                 "dept_id",
                 "cat_id",
                 "store_id",
-                "state_id"
-            ],
+                "state_id"],
             var_name="d",
-            value_name="units_sold"
-        )
+            value_name="units_sold")
 
-        # CLEAN TEXT COLUMNS
-
+        # CLEANING TEXT COLUMNS
         for column in [
             "item_id",
             "dept_id",
@@ -56,25 +48,21 @@ def transform_sales():
             melted[column] = (
                 melted[column]
                 .str.upper()
-                .str.strip()
-            )
+                .str.strip())
 
-        # CLEAN SALES VALUES
+        # CLEANING SALES VALUES
 
         melted["units_sold"] = (
             melted["units_sold"]
             .fillna(0)
-            .astype("int32")
-        )
+            .astype("int32"))
 
-
-        # REMOVE ZERO SALES
+        # REMOVING ZERO SALES
 
         melted = melted[
-            melted["units_sold"] > 0
-        ]
+            melted["units_sold"] > 0]
 
-        # REMOVE DUPLICATES
+        # REMOVING DUPLICATES
         melted = melted.drop_duplicates()
         
         yield melted

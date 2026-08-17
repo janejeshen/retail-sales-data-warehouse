@@ -15,19 +15,13 @@ def run_etl():
     print("=" * 70)
 
     # CALENDAR
-    load_calendar(
-        batch_id="M5_CALENDAR_001"
-    )
+    load_calendar(batch_id="M5_CALENDAR_001")
 
     # SELL PRICES
-    load_prices(
-        batch_id="M5_PRICES_001"
-    )
+    load_prices(batch_id="M5_PRICES_001")
 
     # SALES
-    load_sales(
-        batch_id="M5_VALIDATION_001"
-    )
+    load_sales(batch_id="M5_VALIDATION_001")
 
 
     print("\nETL pipeline finished.")

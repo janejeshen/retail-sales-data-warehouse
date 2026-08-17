@@ -1,95 +1,108 @@
-/*
-File Purpose:Remove duplicate records accidentally introduced into the staging layer 
-after the ETL process was executed twice.
-
-Affected Tables:
-    1. staging.stg_calendar
-    2. staging.stg_sell_prices
-    3. staging.stg_sales
-
-Cause:The Python ETL uses INSERT/APPEND behavior. Running the ETL multiple times appended 
-the same source data to the staging tables instead of replacing or skipping existing records.
-
-Expected Result: Restore each staging table to one unique copy of the source data.
-
-Note:This script should NOT be used as a routine ETL process. 
-It is a data correction script for the duplicate-load incident.
-*/
-
 USE WalmartBI;
 GO
 
 /*
+Purpose: Resets the staging layer after an accidental duplicate ETL load.
 
-CORRECTING stg_calendar
+Note:This script runs inside a transaction.
+    - Use COMMIT TRANSACTION to permanently apply the reset.
+    - Use ROLLBACK TRANSACTION to undo the reset.
 
-The calendar table should contain one record per calendar date.
-We keep one copy of each unique record and remove duplicates.
+Tables affected:
+    - staging.stg_calendar
+    - staging.stg_sell_prices
+    - staging.stg_sales
+    - staging.etl_load_history
 */
 
+SET XACT_ABORT ON;
 
-WITH DuplicateCalendar AS
-(
-    SELECT
-        *,
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY
-                d,
-                [date],
-                wm_yr_wk,
-                weekday,
-                wday,
-                month,
-                year,
-                event_name_1,
-                event_type_1,
-                event_name_2,
-                event_type_2,
-                snap_CA,
-                snap_TX,
-                snap_WI
-            ORDER BY
-                (SELECT NULL)
-        ) AS rn
-    FROM staging.stg_calendar
-)
-DELETE FROM DuplicateCalendar
-WHERE rn > 1;
+BEGIN TRY
 
-PRINT 'Duplicate calendar records removed.';
-GO
+    PRINT 'Starting staging reset transaction...';
 
+    BEGIN TRANSACTION;
 
-/*
-CORRECTING stg_sell_prices
+    -- Capturing row counts BEFORE reset
+    PRINT 'Row counts BEFORE reset:';
 
-A price record is uniquely identified by:
-    - store_id
-    - item_id
-    - wm_yr_wk
-    - sell_price
-Should keep one copy of each unique record.
-*/
+    SELECT 'stg_sales' AS TableName,COUNT(*) AS RowsCount
+    FROM staging.stg_sales
 
-WITH DuplicatePrices AS
-(
-    SELECT
-        *,
-        ROW_NUMBER() OVER
-        (
-            PARTITION BY
-                store_id,
-                item_id,
-                wm_yr_wk,
-                sell_price
-            ORDER BY
-                (SELECT NULL)
-        ) AS rn
+    UNION ALL
+
+    SELECT 'stg_sell_prices', COUNT(*)
     FROM staging.stg_sell_prices
-)
-DELETE FROM DuplicatePrices
-WHERE rn > 1;
 
-PRINT 'Duplicate sell price records removed.';
-GO
+    UNION ALL
+
+    SELECT 'stg_calendar',COUNT(*)
+    FROM staging.stg_calendar
+
+    UNION ALL
+
+    SELECT 'etl_load_history', COUNT(*)
+    FROM staging.etl_load_history;
+
+    -- Clearing sales
+    PRINT 'Truncating stg_sales...';
+    TRUNCATE TABLE staging.stg_sales;
+
+    -- Clearing sell prices
+    PRINT 'Truncating stg_sell_prices...';
+
+    TRUNCATE TABLE staging.stg_sell_prices;
+
+    -- Clearing calendar
+    PRINT 'Truncating stg_calendar...';
+    TRUNCATE TABLE staging.stg_calendar;
+
+    -- reset batch history
+    DELETE FROM staging.etl_load_history;
+
+    -- Verifying inside transaction
+    PRINT 'Row counts AFTER reset:';
+
+    SELECT 'stg_sales' AS TableName, COUNT(*) AS RowsCount
+    FROM staging.stg_sales
+
+    UNION ALL
+
+    SELECT 'stg_sell_prices',COUNT(*)
+    FROM staging.stg_sell_prices
+
+    UNION ALL
+
+    SELECT 'stg_calendar', COUNT(*)
+    FROM staging.stg_calendar
+    
+    UNION ALL 
+    
+    SELECT 'etl_load_history', COUNT(*)
+    FROM staging.etl_load_history;
+
+
+    PRINT 'Staging reset completed successfully.';
+    PRINT 'The transaction is still open.';
+
+
+    COMMIT TRANSACTION;
+    PRINT 'Staging reset COMMITTED.';
+
+    -- ROLLBACK TRANSACTION;
+    -- PRINT 'Staging reset ROLLED BACK.';
+
+END TRY
+
+BEGIN CATCH
+
+    IF @@TRANCOUNT > 0
+        ROLLBACK TRANSACTION;
+
+    PRINT 'ERROR: Staging reset failed.';
+    PRINT ERROR_MESSAGE();
+
+    THROW;
+
+END CATCH;
+

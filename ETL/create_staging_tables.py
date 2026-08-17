@@ -7,10 +7,7 @@ from database import engine
 sql = """
 
 IF NOT EXISTS (
-SELECT *
-FROM sys.schemas
-WHERE name='staging'
-)
+SELECT * FROM sys.schemas WHERE name='staging')
 
 EXEC('CREATE SCHEMA staging');
 

@@ -36,7 +36,7 @@ def load_sales(
     exits without inserting anything.
     """
 
-    # CHECK WHETHER BATCH WAS ALREADY LOADED
+    # CHECKING WHETHER BATCH WAS ALREADY LOADED
 
     if batch_already_loaded(
         SALES_DATASET,
@@ -52,21 +52,18 @@ def load_sales(
 
         return
 
-    # VALIDATE SOURCE FILE
+    # VALIDATING SOURCE FILE
 
     if not os.path.exists(source_file):
 
-        raise FileNotFoundError(
-            f"Sales source file not found: {source_file}"
-        )
+        raise FileNotFoundError(f"Sales source file not found: {source_file}")
 
-    # REGISTER BATCH
+    # REGISTERING BATCH
 
     start_batch(
         dataset_name=SALES_DATASET,
         source_file=source_file,
-        batch_id=batch_id
-    )
+        batch_id=batch_id)
 
 
     print("=" * 60)
@@ -83,17 +80,15 @@ def load_sales(
 
 
     try:
-        # PROCESS CHUNKS
+        # PROCESSING CHUNKS
         for chunk_number, melted in enumerate(
             transform_sales(),
             start=1
         ):
 
-            print(
-                f"\nProcessing Chunk {chunk_number}"
-            )
+            print(f"\nProcessing Chunk {chunk_number}")
 
-            # LOAD CHUNK
+            # LOADING CHUNK
 
             melted.to_sql(
                 name="stg_sales",
@@ -101,8 +96,7 @@ def load_sales(
                 con=engine,
                 if_exists="append",
                 index=False,
-                chunksize=SQL_BATCH_SIZE
-            )
+                chunksize=SQL_BATCH_SIZE)
 
 
             rows = len(melted)
@@ -110,11 +104,9 @@ def load_sales(
             total_inserted += rows
 
 
-            print(
-                f"Inserted {rows:,} rows"
-            )
+            print(f"Inserted {rows:,} rows")
 
-        # MARK BATCH AS SUCCESSFUL
+        # MARKING BATCH AS SUCCESSFUL
 
         complete_batch(
             dataset_name=SALES_DATASET,
@@ -135,7 +127,7 @@ def load_sales(
         print(f"Time Taken: {elapsed / 60:.2f} minutes")
 
     except Exception as error:
-        # RECORD FAILURE
+        # RECORDING FAILURE
         fail_batch(
             dataset_name=SALES_DATASET,
             batch_id=batch_id,
