@@ -47,8 +47,8 @@ The validations covered include:
 A total of 41 validation checks were executed.
 
 - Checks executed : 41
-- Passed : 40
-- Failed : 1
+- Passed : 41
+- Failed : 0
 
 
 ## 2. Project Objective
@@ -310,3 +310,154 @@ The source files were compared with the SQL Server staging tables:
 - Sales: 18,550,276 expected rows = 18,550,276 staging rows - PASS
 
 All source data was loaded successfully with the expected row counts.
+
+## 16. Duplicate Validation
+Duplicate checks were performed to identify if there is any accidental repeated loads or duplicate source records.
+
+The following checks passed:
+```text
+Calendar duplicate d keys
+Price duplicate business keys
+Sales duplicate id + d keys
+```
+
+This is particularly important because the sales dataset is large and the ETL process is executed in multiple chunks.
+
+The validation confirms that the current staging layer does not contain duplicate sales records based on the tested id + d key.
+
+## 17. Null Validation
+Critical identifiers fields were checked for null values
+
+The following checks passed
+```text
+Calendar required fields
+Price required fields
+Sales identifiers
+```
+No unexpected Null values were detectedin the tested required fields.
+
+## 18. Price Data Quality Validation
+The sell-price dataset was checked for invalid values.
+
+Tests included:
+```text
+Invalid wm_yr_wk
+Invalid sell_price
+Negative sell_price
+Duplicate store/item/week combinations
+```
+
+All checks returned zero invalid records.
+
+Therefore, the current sell-price staging data satisfies the validation rules defined in the testing notebook.
+
+## 19.Sales Data Quality Validation
+Sales data was tested for:
+- Duplicate id + d combinations
+- Non-positive sales after transformation
+- Missing calendar day keys
+
+The results were:
+```text
+Sales duplicate id+d keys:       0
+Non-positive sales rows:         0
+Sales day keys missing:          0
+```
+All the tests passed.
+
+## 20. Referential Integrity Validation
+The sales day identifiers were compared with the calendar table.
+
+The test checked whether any sales record contained a `d` value that did not exist in the calendar table.
+
+Sales day keys missing from calendar were 0.
+
+This shows that the sales staging data currently has valid day identifiers with respect to the staging calendar table.
+
+## 21. Database Validation
+The ETL validation also confirmed that the expected SQL Server database was accessible.
+The WalmartBI database and all the staging tables were available.
+
+
+## 22. ETL Load Integrity
+
+The current validation results provide evidence that:
+- Calendar data was completely loaded.
+- Sell-price data was completely loaded.
+- Sales staging matches the expected transformed row count.
+- No tested duplicate records exist.
+- No tested critical NULL values exist.
+- No invalid prices were detected.
+- No invalid sales records remained after transformation.
+- Sales day identifiers have matching calendar records.
+- Required staging tables exist.
+- The SQL Server database connection is functioning.
+
+## 23. ETL Batch Management
+The project uses staging.etl_load_history to track and control ETL batches.
+
+This helps prevent duplicate data when the same ETL process is run more than once. The system checks whether a batch has already been successfully loaded and skips it if it has.
+
+Failed batches are also recorded separately, allowing them to be investigated and retried when necessary.
+
+## 24. Testing Limitations
+
+The current testing phase focuses primarily on the source-to-staging layer.
+
+It does not yet fully validate:
+
+- Dimension tables
+- Fact tables
+- Warehouse surrogate keys
+- Warehouse aggregations
+- Slowly changing dimensions
+- Power BI measures
+- DAX calculations
+- Dashboard-level business logic
+
+These tests will be introduced after the warehouse layer has been created.
+
+## Conclusion
+The ETL testing results show that the Walmart source-to-staging pipeline is working correctly based on the implemented transformation and validation rules.
+
+A total of 41 validation checks were executed, with all 41 checks passing and no failed checks.
+
+The most important result is the successful reconciliation of the transformed sales data:
+```
+Expected: 18,550,276
+Actual:   18,550,276
+```
+This confirms that the sales staging table contains the expected number of transformed records.
+
+The testing also confirmed that the calendar and sell-price staging tables match the number of records in their source datasets.
+
+No duplicate records, invalid prices, missing sales-calendar keys or critical NULL values were found during the tests.
+
+Based on the completed source-to-staging validation, the ETL pipeline has successfully passed the current validation phase and can proceed to the next stages:
+
+
+```text
+ETL Testing
+     ↓
+Data Cleaning
+     ↓
+Warehouse Design
+     ↓
+Dimension Tables
+     ↓
+Fact Table
+     ↓
+Warehouse Testing
+     ↓
+Power BI
+```
+
+## 32. Test Evidence
+
+The validation results were generated using:
+
+`Testing/notebooks/01_validate_staging_etl.ipynb`
+
+The notebook runs automated checks on both the original Walmart CSV files and the SQL Server staging tables.
+
+The tests are repeatable, meaning the same validation checks can be run again after future ETL changes or when new data batches are added.
