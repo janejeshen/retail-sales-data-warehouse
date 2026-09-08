@@ -129,3 +129,4 @@ ORDER BY row_count;
 SELECT date,weekday, DATENAME(WEEKDAY,date) AS calculated_weekday
 FROM staging.stg_calendar
 WHERE weekday <> DATENAME(WEEKDAY,date);
+
